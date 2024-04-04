@@ -23,3 +23,5 @@ target_link_libraries(test
   pico_stdlib
   pico_cyw43_arch_none
   )
+
+add_compile_options(test PRIVATE -Wall)
