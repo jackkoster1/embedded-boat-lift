@@ -68,6 +68,11 @@ void init_move_switches
 {
     //these are to move boat up or down set GPIO to in to read if high or low TODO
 }
+void read_encoder()
+{
+    //TODO
+}
+
 
 int main()
 {
