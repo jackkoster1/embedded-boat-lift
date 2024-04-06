@@ -4,27 +4,42 @@
 #include "pico/cyw43_arch.h"
 
 #define GPIO_TOO_HIGH 0
+#define GPIO_TOO_LOW 1
 #define GPIO_MOTOR1_EN 13
-#define GPIO_MOTOR1_in1 14
-#define GPIO_MOTOR1_in2 15
-//TODO define all below
+#define GPIO_MOTOR1_IN1 14
+#define GPIO_MOTOR1_IN2 15
+#define GPIO_MOTOR2_EN 18
+#define GPIO_MOTOR2_IN1 17
+#define GPIO_MOTOR2_IN2 16
+#define GPIO_ENCODER1_IN1 6
+#define GPIO_ENCODER1_IN2 7
+#define GPIO_ENCODER2_IN1 8
+#define GPIO_ENCODER2_IN2 9
+#define GPIO_ETHERNET_SDA 2
+#define GPIO_ETHERNET_SCL 3
+#define GPIO_INTERNET_SDA 4
+#define GPIO_INTERNET_SCL 5
+#define GPIO_MOVE_UP 21
+#define GPIO_MOVE_DOWN
 /*
 gpio0 = too high
 gpio1 = too low
 gpio13 = motor1 enable
 gpio14 = motor1 in 1
 gpio15 = motor1 in 2
-gpio18 = motor1 enable
-gpio17 = motor1 in 1
-gpio16 = motor1 in 2
+gpio18 = motor2 enable
+gpio17 = motor2 in 1
+gpio16 = motor2 in 2
 gpio6 = encoder1 1
 gpio7 = encoder1 2
 gpio8 = encoder2 1
 gpio9 = encoder2 2
-gpio20 = sda i2c to ethernet
-gpio21 = scl i2c to ethernet
-gpio3 = move up
-gpio4 = move down
+gpio2 = sda i2c to ethernet
+gpio3 = scl i2c to ethernet
+gpio4 = sda i2c to ethernet
+gpio5 = scl i2c to ethernet
+gpio21 = move up
+gpio22 = move down
 
 */
 
