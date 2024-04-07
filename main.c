@@ -135,10 +135,10 @@ int main()
         switch(move_motors_buttons())
         {
             case MOTOR_DOWN:
-            move_down();
+            motor_down();
             break;
             case MOTOR_UP:
-            move_up();
+            motor_up();
             break;
             case MOTOR_STOP:
             gpio_put(GPIO_MOTOR1_EN,0);
