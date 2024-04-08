@@ -33,6 +33,11 @@ enum{
 #define GPIO_MOVE_DOWN 22
 
 
+
+bool too_high = false;
+bool too_low = false;
+uint32_t encoder1 = 0; //how many phases from too high limit switch
+uint32_t encoder2 = 0;
 void too_high_handler(uint callb,uint32_t events){
     //TODO set motor enables to off and flag the too high var
     cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
@@ -100,16 +105,47 @@ void motor_up()
     //check limit switches
     //check phase of encoders 
     //if one is higher than the other stop higher motor to allow to catch up
-    //
-
+    if(!too_high)
+    {
+        bool on = 1;//may need to be reversed********************************************************************
+        gpio_put(GPIO_MOTOR1_IN1,on); 
+        gpio_put(GPIO_MOTOR1_IN2,!on);
+        gpio_put(GPIO_MOTOR2_IN1,on);
+        gpio_put(GPIO_MOTOR2_IN2,!on);
+        if(encoder1 >= encoder2)
+        {
+            gpio_put(GPIO_MOTOR1_EN,1);
+        }
+        if(encoder1 <= encoder2)
+        {
+            gpio_put(GPIO_MOTOR2_EN,1);
+        }
+        
+        
+        
+    }
 }
 void motor_down()
 {
     //check limit switches
     //check phase of encoders 
     //if one is higher than the other stop lower motor to allow to catch up
-    //
+    bool on = 1;//may need to be reversed********************************************************************
+    gpio_put(GPIO_MOTOR1_IN1,!on); 
+    gpio_put(GPIO_MOTOR1_IN2,on);
+    gpio_put(GPIO_MOTOR2_IN1,!on);
+    gpio_put(GPIO_MOTOR2_IN2,on);
+    //enable
+    if(encoder1 <= encoder2)
+        {
+            gpio_put(GPIO_MOTOR1_EN,1);
+        }
+    if(encoder1 >= encoder2)
+        {
+            gpio_put(GPIO_MOTOR2_EN,1);
+        }
 }
+
 
 
 int main()
