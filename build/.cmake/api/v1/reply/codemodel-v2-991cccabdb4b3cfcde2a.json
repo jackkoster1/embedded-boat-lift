@@ -1166,7 +1166,7 @@
 				{
 					"directoryIndex" : 0,
 					"id" : "test::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-test-Debug-aa35f18c1825486799a3.json",
+					"jsonFile" : "target-test-Debug-787607774aedd4f45ae4.json",
 					"name" : "test",
 					"projectIndex" : 0
 				},
@@ -1196,6 +1196,6 @@
 	"version" : 
 	{
 		"major" : 2,
-		"minor" : 4
+		"minor" : 6
 	}
 }

@@ -71,9 +71,13 @@ void init_limit_switches()
 
 }
 
-void init_move_switches()
+void init_motor_buttons()
 {
     //these are to move boat up or down set GPIO to in to read if high or low TODO
+    gpio_init(GPIO_MOVE_DOWN);
+    gpio_init(GPIO_MOVE_UP);
+    gpio_set_dir(GPIO_MOVE_DOWN,GPIO_IN);
+    gpio_set_dir(GPIO_MOVE_UP,GPIO_IN);
 }
 void read_encoder()
 {
@@ -82,9 +86,14 @@ void read_encoder()
 
 int move_motors_buttons()
 {
-    //TODO
-    //move based on button
-    return MOTOR_STOP;
+    bool down = gpio_get(GPIO_MOVE_DOWN);
+    bool up = gpio_get(GPIO_MOVE_UP);
+    if(down && !up)
+        return MOTOR_DOWN;
+    else if(up && !down)
+        return MOTOR_UP;
+    else
+        return MOTOR_STOP;
 }
 void motor_up()
 {
@@ -117,7 +126,7 @@ int main()
     init_motors();
     init_limit_switches();
     init_encoders();
-    init_move_switches();
+    init_motor_buttons();
 
     //gpio_init(6);
     //gpio_init(7);
