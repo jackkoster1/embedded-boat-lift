@@ -72,7 +72,10 @@ void init_encoders()
 }
 void init_limit_switches()
 {
-    //TODO set up interupt
+    gpio_init(GPIO_TOO_LOW); 
+    gpio_init(GPIO_TOO_HIGH);
+    gpio_set_irq_enabled_with_callback(GPIO_TOO_LOW, GPIO_IRQ_EDGE_RISE, true, &too_low_handler); //this sets up interups 
+    gpio_set_irq_enabled_with_callback(GPIO_TOO_HIGH, GPIO_IRQ_EDGE_RISE, true, &too_high_handler); //this sets up interups 
 
 }
 
