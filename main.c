@@ -1,15 +1,20 @@
+// orange buck volt = 3.3v
 #include <stdio.h>
 #include "hardware/gpio.h"
 #include "pico/stdlib.h"
 #include "pico/cyw43_arch.h"
 
-enum{
+enum
+{
     MOTOR_DOWN,
     MOTOR_UP,
     MOTOR_STOP
 };
 #define GPIO_TOO_HIGH 0
 #define GPIO_TOO_LOW 1
+
+#define LED_RED 11
+#define LED_YLW 10
 
 #define GPIO_MOTOR1_EN 13
 #define GPIO_MOTOR1_IN1 14
@@ -33,123 +38,150 @@ enum{
 #define GPIO_MOVE_DOWN 22
 
 
-
-bool too_high = false;
-bool too_low = false;
-uint32_t encoder1 = 0; //how many phases from too high limit switch
+uint32_t encoder1 = 0; // how many phases from too high limit switch
 uint32_t encoder2 = 0;
-void too_high_handler(uint callb,uint32_t events){
-    //TODO set motor enables to off and flag the too high var
-    cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
+void too_high_handler(uint callb, uint32_t events)
+{
+    // TODO set motor enables to off and flag the too high var
+    gpio_put(GPIO_MOTOR1_EN, 0);
+    gpio_put(GPIO_MOTOR2_EN, 0);
+
 }
-void too_low_handler(uint callb,uint32_t events){
-    //TODO set motor enables to off and flag the too low var
+void too_low_handler(uint callb, uint32_t events)
+{
+    // TODO set motor enables to off and flag the too low var
+    gpio_put(GPIO_MOTOR1_EN, 0);
+    gpio_put(GPIO_MOTOR2_EN, 0);
+}
+void encoder1_handler()
+{
     cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
+    bool read = gpio_get(GPIO_ENCODER1_IN2);
+    if (read)
+    {
+        gpio_put(LED_RED, 1);
+    }
+    else
+    {
+        gpio_put(LED_YLW, 1);
+    }
+
+    cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
 }
 
 void init_motors()
 {
     // motor1
-    gpio_init(GPIO_MOTOR1_EN); 
+    gpio_init(GPIO_MOTOR1_EN);
     gpio_init(GPIO_MOTOR1_IN1);
     gpio_init(GPIO_MOTOR1_IN2);
-    gpio_set_dir(GPIO_MOTOR1_EN,GPIO_OUT);
-    gpio_set_dir(GPIO_MOTOR1_IN1,GPIO_OUT);
-    gpio_set_dir(GPIO_MOTOR1_IN2,GPIO_OUT);
-    //motor2 
-    gpio_init(GPIO_MOTOR2_EN); 
+    gpio_set_dir(GPIO_MOTOR1_EN, GPIO_OUT);
+    gpio_set_dir(GPIO_MOTOR1_IN1, GPIO_OUT);
+    gpio_set_dir(GPIO_MOTOR1_IN2, GPIO_OUT);
+    // motor2
+    gpio_init(GPIO_MOTOR2_EN);
     gpio_init(GPIO_MOTOR2_IN1);
     gpio_init(GPIO_MOTOR2_IN2);
-    gpio_set_dir(GPIO_MOTOR2_EN,GPIO_OUT);
-    gpio_set_dir(GPIO_MOTOR2_IN1,GPIO_OUT);
-    gpio_set_dir(GPIO_MOTOR2_IN2,GPIO_OUT);
+    gpio_set_dir(GPIO_MOTOR2_EN, GPIO_OUT);
+    gpio_set_dir(GPIO_MOTOR2_IN1, GPIO_OUT);
+    gpio_set_dir(GPIO_MOTOR2_IN2, GPIO_OUT);
 }
 void init_encoders()
 {
-    //encoder1 TODO
-    //encoder2 TODO
+    gpio_init(GPIO_ENCODER1_IN1);
+    gpio_init(GPIO_ENCODER1_IN2);
 
+    gpio_set_irq_enabled_with_callback(GPIO_ENCODER1_IN1, GPIO_IRQ_EDGE_FALL, true, &encoder1_handler); // this sets up interups
+    gpio_set_dir(GPIO_ENCODER1_IN1, GPIO_IN);
+    gpio_set_dir(GPIO_ENCODER1_IN2, GPIO_IN);
+    gpio_pull_up(GPIO_ENCODER1_IN1);
+    gpio_pull_up(GPIO_ENCODER1_IN2);
+    // encoder1 TODO
+    // encoder2 TODO
+    gpio_init(LED_RED);
+    gpio_init(LED_YLW);
+    gpio_set_dir(LED_RED, GPIO_OUT);
+    gpio_set_dir(LED_YLW, GPIO_OUT);
 }
 void init_limit_switches()
 {
-    gpio_init(GPIO_TOO_LOW); 
+    gpio_init(GPIO_TOO_LOW);
     gpio_init(GPIO_TOO_HIGH);
-    gpio_set_irq_enabled_with_callback(GPIO_TOO_LOW, GPIO_IRQ_EDGE_RISE, true, &too_low_handler); //this sets up interups 
-    gpio_set_irq_enabled_with_callback(GPIO_TOO_HIGH, GPIO_IRQ_EDGE_RISE, true, &too_high_handler); //this sets up interups 
-
+    gpio_set_irq_enabled_with_callback(GPIO_TOO_LOW, GPIO_IRQ_EDGE_RISE, true, &too_low_handler);   // this sets up interups
+    gpio_set_irq_enabled_with_callback(GPIO_TOO_HIGH, GPIO_IRQ_EDGE_RISE, true, &too_high_handler); // this sets up interups
+    gpio_set_dir(GPIO_TOO_HIGH, GPIO_IN);
+    gpio_set_dir(GPIO_TOO_LOW,  GPIO_IN);
 }
 
 void init_motor_buttons()
 {
-    //these are to move boat up or down set GPIO to in to read if high or low TODO
+    // these are to move boat up or down set GPIO to in to read if high or low TODO
     gpio_init(GPIO_MOVE_DOWN);
     gpio_init(GPIO_MOVE_UP);
-    gpio_set_dir(GPIO_MOVE_DOWN,GPIO_IN);
-    gpio_set_dir(GPIO_MOVE_UP,GPIO_IN);
+    gpio_set_dir(GPIO_MOVE_DOWN, GPIO_IN);
+    gpio_set_dir(GPIO_MOVE_UP, GPIO_IN);
 }
 void read_encoder()
 {
-    //TODO
+    // TODO
 }
 
 int move_motors_buttons()
 {
     bool down = gpio_get(GPIO_MOVE_DOWN);
     bool up = gpio_get(GPIO_MOVE_UP);
-    if(down && !up)
+    if (down && !up)
         return MOTOR_DOWN;
-    else if(up && !down)
+    else if (up && !down)
         return MOTOR_UP;
     else
         return MOTOR_STOP;
 }
 void motor_up()
 {
-    //check limit switches
-    //check phase of encoders 
-    //if one is higher than the other stop higher motor to allow to catch up
-    if(!too_high)
+    // check limit switches
+    // check phase of encoders
+    // if one is higher than the other stop higher motor to allow to catch up
+    if (!gpio_get(GPIO_TOO_HIGH))
     {
-        bool on = 1;//may need to be reversed********************************************************************
-        gpio_put(GPIO_MOTOR1_IN1,on); 
-        gpio_put(GPIO_MOTOR1_IN2,!on);
-        gpio_put(GPIO_MOTOR2_IN1,on);
-        gpio_put(GPIO_MOTOR2_IN2,!on);
-        if(encoder1 >= encoder2)
+        bool on = 1; // may need to be reversed********************************************************************
+        gpio_put(GPIO_MOTOR1_IN1, on);
+        gpio_put(GPIO_MOTOR1_IN2, !on);
+        gpio_put(GPIO_MOTOR2_IN1, on);
+        gpio_put(GPIO_MOTOR2_IN2, !on);
+        if (encoder1 >= encoder2)
         {
-            gpio_put(GPIO_MOTOR1_EN,1);
+            gpio_put(GPIO_MOTOR1_EN, 1);
         }
-        if(encoder1 <= encoder2)
+        if (encoder1 <= encoder2)
         {
-            gpio_put(GPIO_MOTOR2_EN,1);
+            gpio_put(GPIO_MOTOR2_EN, 1);
         }
-        
-        
-        
     }
 }
 void motor_down()
 {
-    //check limit switches
-    //check phase of encoders 
-    //if one is higher than the other stop lower motor to allow to catch up
-    bool on = 1;//may need to be reversed********************************************************************
-    gpio_put(GPIO_MOTOR1_IN1,!on); 
-    gpio_put(GPIO_MOTOR1_IN2,on);
-    gpio_put(GPIO_MOTOR2_IN1,!on);
-    gpio_put(GPIO_MOTOR2_IN2,on);
-    //enable
-    if(encoder1 <= encoder2)
+    // check limit switches
+    // check phase of encoders
+    // if one is higher than the other stop lower motor to allow to catch up
+    if(!gpio_get(GPIO_TOO_LOW))
+    {
+        bool on = 1; // may need to be reversed********************************************************************
+        gpio_put(GPIO_MOTOR1_IN1, !on);
+        gpio_put(GPIO_MOTOR1_IN2, on);
+        gpio_put(GPIO_MOTOR2_IN1, !on);
+        gpio_put(GPIO_MOTOR2_IN2, on);
+        // enable
+        if (encoder1 <= encoder2)
         {
-            gpio_put(GPIO_MOTOR1_EN,1);
+            gpio_put(GPIO_MOTOR1_EN, 1);
         }
-    if(encoder1 >= encoder2)
+        if (encoder1 >= encoder2)
         {
-            gpio_put(GPIO_MOTOR2_EN,1);
+            gpio_put(GPIO_MOTOR2_EN, 1);
         }
+    }
 }
-
-
 
 int main()
 {
@@ -161,42 +193,40 @@ int main()
         return -1;
     }
     cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
-    
+
     init_motors();
     init_limit_switches();
     init_encoders();
     init_motor_buttons();
 
-    //gpio_init(6);
-    //gpio_init(7);
-    //gpio_set_dir(6,GPIO_IN);
-    //gpio_set_dir(7,GPIO_IN);
-    //gpio_pull_down(0);
-    //gpio_set_function(0,GPIO_FUNC_XIP);
-    //gpio_set_pulls(0,1,0);//pull up
-    //gpio_set_irqover
-    //gpio_set_irqenable
-    //gpio_set_irq_enabled_with_callback(0, GPIO_IRQ_EDGE_RISE, true, &too_high_handler); //this sets up interups 
-    //multithread to networking TODO
-    while(1)
+    // gpio_init(6);
+    // gpio_init(7);
+    // gpio_set_dir(6,GPIO_IN);
+    // gpio_set_dir(7,GPIO_IN);
+    // gpio_pull_down(0);
+    // gpio_set_function(0,GPIO_FUNC_XIP);
+    // gpio_set_pulls(0,1,0);//pull up
+    // gpio_set_irqover
+    // gpio_set_irqenable
+    // gpio_set_irq_enabled_with_callback(0, GPIO_IRQ_EDGE_RISE, true, &too_high_handler); //this sets up interups
+    // multithread to networking TODO
+    while (1)
     {
-        switch(move_motors_buttons())
+        switch (move_motors_buttons())
         {
-            case MOTOR_DOWN:
+        case MOTOR_DOWN:
             motor_down();
             break;
-            case MOTOR_UP:
+        case MOTOR_UP:
             motor_up();
             break;
-            case MOTOR_STOP:
-            gpio_put(GPIO_MOTOR1_EN,0);
-            gpio_put(GPIO_MOTOR2_EN,0);
+        case MOTOR_STOP:
+            gpio_put(GPIO_MOTOR1_EN, 0);
+            gpio_put(GPIO_MOTOR2_EN, 0);
             break;
         }
-        //check up/down move switches and move accordenly with if statements TODO
+        // check up/down move switches and move accordenly with if statements TODO
 
-
-        //check networking request buffer and move TODO
-        
+        // check networking request buffer and move TODO
     }
 }
