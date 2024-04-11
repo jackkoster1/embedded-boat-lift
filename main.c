@@ -38,7 +38,7 @@ enum
 #define GPIO_MOVE_DOWN 22
 
 
-uint32_t encoder1 = 0; // how many phases from too high limit switch
+volatile uint32_t encoder1 = 0; // how many phases from too high limit switch
 uint32_t encoder2 = 0;
 void too_high_handler(uint callb, uint32_t events)
 {
@@ -55,18 +55,23 @@ void too_low_handler(uint callb, uint32_t events)
 }
 void encoder1_handler()
 {
-    cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
     bool read = gpio_get(GPIO_ENCODER1_IN2);
     if (read)
     {
+        if(encoder1 < 100)
+        encoder1 = encoder1 + 1;
         gpio_put(LED_RED, 1);
     }
     else
     {
+        if(encoder1 > 0)
+            encoder1 = encoder1 - 1;
         gpio_put(LED_YLW, 1);
     }
-
-    cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
+    if(encoder1 > 100)
+        cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
+    else 
+        cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
 }
 
 void init_motors()
@@ -91,7 +96,7 @@ void init_encoders()
     gpio_init(GPIO_ENCODER1_IN1);
     gpio_init(GPIO_ENCODER1_IN2);
 
-    gpio_set_irq_enabled_with_callback(GPIO_ENCODER1_IN1, GPIO_IRQ_EDGE_FALL, true, &encoder1_handler); // this sets up interups
+    gpio_set_irq_enabled_with_callback(GPIO_ENCODER1_IN1, GPIO_IRQ_EDGE_RISE, true, &encoder1_handler); // this sets up interups
     gpio_set_dir(GPIO_ENCODER1_IN1, GPIO_IN);
     gpio_set_dir(GPIO_ENCODER1_IN2, GPIO_IN);
     gpio_pull_up(GPIO_ENCODER1_IN1);
@@ -161,6 +166,7 @@ void motor_up()
 }
 void motor_down()
 {
+    
     // check limit switches
     // check phase of encoders
     // if one is higher than the other stop lower motor to allow to catch up
