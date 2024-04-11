@@ -1,8 +1,16 @@
 // orange buck volt = 3.3v
+#include "lwip/apps/httpd.h"
 #include <stdio.h>
 #include "hardware/gpio.h"
 #include "pico/stdlib.h"
 #include "pico/cyw43_arch.h"
+#include "lwipopts.h"
+#include "ssi.h"
+#include "cgi.h"
+
+const char WIFI_SSID = "WIFISSIDHERE";
+const char WIFI_PASS = "WIFIPASSHERE";
+
 
 enum
 {
@@ -192,12 +200,25 @@ void motor_down()
 int main()
 {
     stdio_init_all();
-
-    if (cyw43_arch_init())
+    int arch_init_status = cyw43_arch_init();
+    if (arch_init_status != 0)
     {
         printf("WiFi init failed");
         return -1;
     }
+    cyw43_arch_enable_sta_mode();
+    while(cyw43_arch_wifi_connect_timeout_ms(WIFI_SSID, WIFI_PASS, CYW43_AUTH_WPA2_AES_PSK, 30000))
+    {
+        printf("WiFi connect failed");
+    }
+    printf("WiFi connected");
+
+    httpd_init();
+    printf("HTTP server started\n")
+    
+    ssi_init();
+    printf("SSI Handler initialized\n");
+
     cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
 
     init_motors();

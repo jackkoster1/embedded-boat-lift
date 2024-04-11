@@ -9,6 +9,9 @@ set(PICO_BOARD "pico_w")
 
 pico_sdk_init()
 
+message("Running makefsdata python script")
+exec_program(COMMAND py makefsdata.py WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
+
 add_executable(test
   main.c
 )
@@ -20,8 +23,12 @@ target_include_directories(test PRIVATE ${CMAKE_CURRENT_LIST_DIR} )
 
 target_link_libraries(test 
   pico_cyw43_arch_lwip_threadsafe_background 
+  pico_lwip_http
   pico_stdlib
   pico_cyw43_arch_none
+  hardware_adc
   )
+
+
 
 add_compile_options(test PRIVATE -Wall)
