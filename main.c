@@ -204,20 +204,21 @@ int main()
     if (arch_init_status != 0)
     {
         printf("WiFi init failed");
+        cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
         return -1;
     }
-    cyw43_arch_enable_sta_mode();
-    while(cyw43_arch_wifi_connect_timeout_ms(WIFI_SSID, WIFI_PASS, CYW43_AUTH_WPA2_AES_PSK, 30000))
-    {
-        printf("WiFi connect failed");
-    }
-    printf("WiFi connected");
+    //cyw43_arch_enable_sta_mode();
+    //while(cyw43_arch_wifi_connect_timeout_ms(WIFI_SSID, WIFI_PASS, CYW43_AUTH_WPA2_AES_PSK, 30000))
+    //{
+    //    printf("WiFi connect failed");
+    //}
+    //printf("WiFi connected");
 
-    httpd_init();
-    printf("HTTP server started\n")
+    //httpd_init();
+    //printf("HTTP server started\n")
     
-    ssi_init();
-    printf("SSI Handler initialized\n");
+    //ssi_init();
+    //printf("SSI Handler initialized\n");
 
     cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
 
