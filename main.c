@@ -1,15 +1,19 @@
 // orange buck volt = 3.3v
-#include "lwip/apps/httpd.h"
+//#include "lwip/apps/httpd.h"
 #include <stdio.h>
 #include "hardware/gpio.h"
 #include "pico/stdlib.h"
 #include "pico/cyw43_arch.h"
 #include "lwipopts.h"
-#include "ssi.h"
-#include "cgi.h"
+//#include "ssi.h"
+//#include "cgi.h"
+#include "lwip/netif.h"
+#include "lwip/ip4_addr.h"
+#include "lwip/apps/lwiperf.h"
+#include "btstack.h"
 
-const char WIFI_SSID = "WIFISSIDHERE";
-const char WIFI_PASS = "WIFIPASSHERE";
+//const char WIFI_SSID = "WIFISSIDHERE";
+//const char WIFI_PASS = "WIFIPASSHERE";
 
 
 enum
@@ -45,41 +49,55 @@ enum
 #define GPIO_MOVE_UP 21
 #define GPIO_MOVE_DOWN 22
 
+#define MAX_ENCODER_C 15000
+#define MIN_ENCODER_C 0
 
-volatile uint32_t encoder1 = 0; // how many phases from too high limit switch
-uint32_t encoder2 = 0;
-void too_high_handler(uint callb, uint32_t events)
+uint16_t encoder1_c = 0; // how many phases from too high limit switch
+uint16_t encoder2_c = 0;
+bool too_high = false, 
+     too_low = false;
+void too_high_handler()
 {
     // TODO set motor enables to off and flag the too high var
     gpio_put(GPIO_MOTOR1_EN, 0);
     gpio_put(GPIO_MOTOR2_EN, 0);
-
+    too_high = true;
 }
-void too_low_handler(uint callb, uint32_t events)
+void too_low_handler()
 {
     // TODO set motor enables to off and flag the too low var
     gpio_put(GPIO_MOTOR1_EN, 0);
     gpio_put(GPIO_MOTOR2_EN, 0);
+    too_low = true;
 }
 void encoder1_handler()
 {
+    cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
     bool read = gpio_get(GPIO_ENCODER1_IN2);
-    if (read)
+    if(read)//platform moving down
     {
-        if(encoder1 < 100)
-        encoder1 = encoder1 + 1;
-        gpio_put(LED_RED, 1);
+        if(encoder1_c < MAX_ENCODER_C)
+        {
+            //encoder1_c +=1;
+        }
+        else //error out of bounds!
+        {
+            cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
+            while(1);
+        }
     }
     else
     {
-        if(encoder1 > 0)
-            encoder1 = encoder1 - 1;
-        gpio_put(LED_YLW, 1);
+        if(encoder1_c > MIN_ENCODER_C)
+        {
+            //encoder1_c -= 1;
+        }
+        else
+        {
+            cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
+            while(1);
+        }
     }
-    if(encoder1 > 100)
-        cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
-    else 
-        cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
 }
 
 void init_motors()
@@ -104,7 +122,7 @@ void init_encoders()
     gpio_init(GPIO_ENCODER1_IN1);
     gpio_init(GPIO_ENCODER1_IN2);
 
-    gpio_set_irq_enabled_with_callback(GPIO_ENCODER1_IN1, GPIO_IRQ_EDGE_RISE, true, &encoder1_handler); // this sets up interups
+    gpio_set_irq_enabled_with_callback(GPIO_ENCODER1_IN1, GPIO_IRQ_EDGE_FALL, true, &encoder1_handler); // this sets up interups
     gpio_set_dir(GPIO_ENCODER1_IN1, GPIO_IN);
     gpio_set_dir(GPIO_ENCODER1_IN2, GPIO_IN);
     gpio_pull_up(GPIO_ENCODER1_IN1);
@@ -120,8 +138,10 @@ void init_limit_switches()
 {
     gpio_init(GPIO_TOO_LOW);
     gpio_init(GPIO_TOO_HIGH);
-    gpio_set_irq_enabled_with_callback(GPIO_TOO_LOW, GPIO_IRQ_EDGE_RISE, true, &too_low_handler);   // this sets up interups
-    gpio_set_irq_enabled_with_callback(GPIO_TOO_HIGH, GPIO_IRQ_EDGE_RISE, true, &too_high_handler); // this sets up interups
+    gpio_set_irq_enabled_with_callback(GPIO_TOO_LOW, GPIO_IRQ_EDGE_FALL, true, &too_low_handler);   // this sets up interups
+    gpio_set_irq_enabled_with_callback(GPIO_TOO_HIGH, GPIO_IRQ_EDGE_FALL, true, &too_high_handler); // this sets up interups
+    gpio_pull_down(GPIO_TOO_HIGH);
+    gpio_pull_down(GPIO_TOO_LOW);
     gpio_set_dir(GPIO_TOO_HIGH, GPIO_IN);
     gpio_set_dir(GPIO_TOO_LOW,  GPIO_IN);
 }
@@ -155,30 +175,33 @@ void motor_up()
     // check limit switches
     // check phase of encoders
     // if one is higher than the other stop higher motor to allow to catch up
-    if (!gpio_get(GPIO_TOO_HIGH))
+    if (gpio_get(GPIO_TOO_HIGH))
     {
         bool on = 1; // may need to be reversed********************************************************************
         gpio_put(GPIO_MOTOR1_IN1, on);
         gpio_put(GPIO_MOTOR1_IN2, !on);
         gpio_put(GPIO_MOTOR2_IN1, on);
         gpio_put(GPIO_MOTOR2_IN2, !on);
-        if (encoder1 >= encoder2)
+        if (encoder1_c >= encoder2_c)
         {
             gpio_put(GPIO_MOTOR1_EN, 1);
         }
-        if (encoder1 <= encoder2)
+        else
+            gpio_put(GPIO_MOTOR1_EN, 0);
+        if (encoder1_c <= encoder2_c)
         {
             gpio_put(GPIO_MOTOR2_EN, 1);
         }
+        else
+            gpio_put(GPIO_MOTOR2_EN, 0);
     }
 }
 void motor_down()
 {
-    
     // check limit switches
     // check phase of encoders
     // if one is higher than the other stop lower motor to allow to catch up
-    if(!gpio_get(GPIO_TOO_LOW))
+    if(gpio_get(GPIO_TOO_LOW))
     {
         bool on = 1; // may need to be reversed********************************************************************
         gpio_put(GPIO_MOTOR1_IN1, !on);
@@ -186,14 +209,18 @@ void motor_down()
         gpio_put(GPIO_MOTOR2_IN1, !on);
         gpio_put(GPIO_MOTOR2_IN2, on);
         // enable
-        if (encoder1 <= encoder2)
+        if (encoder1_c >= encoder2_c)
         {
             gpio_put(GPIO_MOTOR1_EN, 1);
         }
-        if (encoder1 >= encoder2)
+        else
+            gpio_put(GPIO_MOTOR1_EN, 0);
+        if (encoder1_c <= encoder2_c)
         {
             gpio_put(GPIO_MOTOR2_EN, 1);
         }
+        else
+            gpio_put(GPIO_MOTOR2_EN, 0);
     }
 }
 

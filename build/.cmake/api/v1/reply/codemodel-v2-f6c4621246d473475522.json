@@ -19,7 +19,8 @@
 					"source" : ".",
 					"targetIndexes" : 
 					[
-						4
+						0,
+						1
 					]
 				},
 				{
@@ -583,9 +584,9 @@
 					"source" : "C:/Program Files/Raspberry Pi/Pico SDK v1.5.1/pico-sdk/src/rp2_common/boot_stage2",
 					"targetIndexes" : 
 					[
-						0,
-						1,
-						2
+						2,
+						3,
+						4
 					]
 				},
 				{
@@ -787,8 +788,8 @@
 					"source" : "C:/Program Files/Raspberry Pi/Pico SDK v1.5.1/pico-sdk/src/rp2_common/tinyusb",
 					"targetIndexes" : 
 					[
-						5,
-						6
+						6,
+						7
 					]
 				},
 				{
@@ -851,7 +852,7 @@
 					"source" : "C:/Program Files/Raspberry Pi/Pico SDK v1.5.1/pico-sdk/src/rp2_common/pico_cyw43_driver",
 					"targetIndexes" : 
 					[
-						3
+						5
 					]
 				},
 				{
@@ -1033,7 +1034,8 @@
 					"name" : "test_project",
 					"targetIndexes" : 
 					[
-						4
+						0,
+						1
 					]
 				},
 				{
@@ -1124,17 +1126,31 @@
 					"parentIndex" : 0,
 					"targetIndexes" : 
 					[
-						0,
-						1,
 						2,
 						3,
+						4,
 						5,
-						6
+						6,
+						7
 					]
 				}
 			],
 			"targets" : 
 			[
+				{
+					"directoryIndex" : 0,
+					"id" : "blc::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-blc-Debug-7733724d52551e584e0d.json",
+					"name" : "blc",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "blc_gatt_header::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-blc_gatt_header-Debug-dc91d97dac935cd35ad5.json",
+					"name" : "blc_gatt_header",
+					"projectIndex" : 0
+				},
 				{
 					"directoryIndex" : 43,
 					"id" : "bs2_default::@bc554eaed616d198a22d",
@@ -1162,13 +1178,6 @@
 					"jsonFile" : "target-cyw43_driver_picow_cyw43_bus_pio_spi_pio_h-Debug-208d5fbd8885f908aba0.json",
 					"name" : "cyw43_driver_picow_cyw43_bus_pio_spi_pio_h",
 					"projectIndex" : 1
-				},
-				{
-					"directoryIndex" : 0,
-					"id" : "test::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-test-Debug-2360c60505bf1049c155.json",
-					"name" : "test",
-					"projectIndex" : 0
 				},
 				{
 					"directoryIndex" : 61,

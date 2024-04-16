@@ -1,4 +1,5 @@
-C:/Users/jackk/OneDrive/blc_pico/blc/build/CMakeFiles/test.dir
+C:/Users/jackk/OneDrive/blc_pico/blc/build/CMakeFiles/blc.dir
+C:/Users/jackk/OneDrive/blc_pico/blc/build/CMakeFiles/blc_gatt_header.dir
 C:/Users/jackk/OneDrive/blc_pico/blc/build/CMakeFiles/edit_cache.dir
 C:/Users/jackk/OneDrive/blc_pico/blc/build/CMakeFiles/rebuild_cache.dir
 C:/Users/jackk/OneDrive/blc_pico/blc/build/pico-sdk/CMakeFiles/edit_cache.dir
