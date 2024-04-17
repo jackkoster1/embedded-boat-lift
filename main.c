@@ -51,8 +51,8 @@ enum
 #define MAX_ENCODER_C 15000
 #define MIN_ENCODER_C 0
 
-uint16_t encoder1_c = 0; // how many phases from too high limit switch
-uint16_t encoder2_c = 0;
+int16_t encoder1_c = 0; // how many phases from too high limit switch
+int16_t encoder2_c = 0;
 static bool too_high = false;
 static bool too_low = false;
 void too_high_handler()
@@ -69,35 +69,46 @@ void too_low_handler()
     gpio_put(GPIO_MOTOR2_EN, 0);
     too_low = true;
 }
+
 void encoder1_handler()
 {
-    cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
     bool read = gpio_get(GPIO_ENCODER1_IN2);
     if (read) // platform moving down
     {
-        if (encoder1_c < MAX_ENCODER_C)
-        {
-            // encoder1_c +=1;
-        }
-        else // error out of bounds!
-        {
-
-            while (1)
-                ;
-        }
+        encoder1_c++;
     }
     else
     {
-        if (encoder1_c > MIN_ENCODER_C)
-        {
-            // encoder1_c -= 1;
-        }
-        else
-        {
+        encoder1_c--;
+    }
+    if (encoder1_c < 600)
+    {
+        cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
+    }
+}
 
-            while (1)
-                ;
-        }
+void encoder2_handler()
+{
+
+}
+
+void gpio_handler(uint gpio, uint32_t events)
+{
+    if (gpio == GPIO_TOO_HIGH)
+    {
+        too_high_handler();
+    }
+    if (gpio == GPIO_TOO_LOW)
+    {
+        too_low_handler();
+    }
+    if (gpio == GPIO_ENCODER1_IN1)
+    {
+        encoder1_handler();
+    }
+    if (gpio == GPIO_ENCODER2_IN1)
+    {
+        encoder2_handler();
     }
 }
 
@@ -118,16 +129,12 @@ void init_motors()
     gpio_set_dir(GPIO_MOTOR2_IN1, GPIO_OUT);
     gpio_set_dir(GPIO_MOTOR2_IN2, GPIO_OUT);
 }
+
 void init_encoders()
 {
-    gpio_init(GPIO_ENCODER1_IN1);
-    gpio_init(GPIO_ENCODER1_IN2);
 
-    gpio_set_irq_enabled_with_callback(GPIO_ENCODER1_IN1, GPIO_IRQ_EDGE_FALL, true, &encoder1_handler); // this sets up interups
-    gpio_set_dir(GPIO_ENCODER1_IN1, GPIO_IN);
-    gpio_set_dir(GPIO_ENCODER1_IN2, GPIO_IN);
-    gpio_pull_up(GPIO_ENCODER1_IN1);
-    gpio_pull_up(GPIO_ENCODER1_IN2);
+    //gpio_set_irq_enabled_with_callback(GPIO_ENCODER1_IN1, GPIO_IRQ_EDGE_FALL, true, &encoder1_handler); // this sets up interups
+    //gpio_set_irq_enabled_with_callback(GPIO_ENCODER2_IN1, GPIO_IRQ_EDGE_FALL, true, &encoder2_handler);
     // encoder1 TODO
     // encoder2 TODO
     // gpio_init(LED_RED);
@@ -140,13 +147,14 @@ void init_limit_switches()
 {
     gpio_init(GPIO_TOO_LOW);
     gpio_init(GPIO_TOO_HIGH);
-    gpio_set_irq_enabled_with_callback(GPIO_TOO_LOW, GPIO_IRQ_EDGE_FALL, true, &too_low_handler);   // this sets up interups
-    gpio_set_irq_enabled_with_callback(GPIO_TOO_HIGH, GPIO_IRQ_EDGE_FALL, true, &too_high_handler); // this sets up interups
-
-    gpio_set_dir(GPIO_TOO_HIGH, GPIO_IN);
-    gpio_set_dir(GPIO_TOO_LOW, GPIO_IN);
     gpio_pull_down(GPIO_TOO_HIGH);
     gpio_pull_down(GPIO_TOO_LOW);
+    gpio_init(GPIO_ENCODER1_IN1);
+    gpio_init(GPIO_ENCODER1_IN2);
+    gpio_pull_up(GPIO_ENCODER1_IN1);
+    gpio_pull_up(GPIO_ENCODER1_IN2);
+    gpio_set_irq_enabled_with_callback(GPIO_TOO_LOW, GPIO_IRQ_EDGE_FALL, true, &too_low_handler);   // this sets up interups
+    gpio_set_irq_enabled_with_callback(GPIO_TOO_HIGH, GPIO_IRQ_EDGE_FALL, true, &too_high_handler); // this sets up interups
 }
 
 void init_inputs()
@@ -155,10 +163,6 @@ void init_inputs()
     gpio_init(GPIO_TOO_HIGH);
     gpio_init(GPIO_ENCODER1_IN1);
     gpio_init(GPIO_ENCODER1_IN2);
-
-    gpio_set_irq_enabled_with_callback(GPIO_TOO_LOW, GPIO_IRQ_EDGE_RISE, true, &too_low_handler);   // this sets up interups
-    gpio_set_irq_enabled_with_callback(GPIO_TOO_HIGH, GPIO_IRQ_EDGE_RISE, true, &too_high_handler); // this sets up interups
-    gpio_set_irq_enabled_with_callback(GPIO_ENCODER1_IN1, GPIO_IRQ_EDGE_FALL, true, &encoder1_handler); // this sets up interups
 
     gpio_set_dir(GPIO_TOO_HIGH, GPIO_IN);
     gpio_set_dir(GPIO_TOO_LOW, GPIO_IN);
@@ -169,6 +173,14 @@ void init_inputs()
     gpio_set_dir(GPIO_ENCODER1_IN2, GPIO_IN);
     gpio_pull_up(GPIO_ENCODER1_IN1);
     gpio_pull_up(GPIO_ENCODER1_IN2);
+
+    gpio_set_irq_enabled_with_callback(GPIO_TOO_HIGH, GPIO_IRQ_EDGE_RISE, true, &gpio_handler);
+    gpio_set_irq_enabled(GPIO_TOO_LOW, GPIO_IRQ_EDGE_RISE, true);
+    gpio_set_irq_enabled(GPIO_ENCODER1_IN1, GPIO_IRQ_EDGE_FALL, true);
+
+    // gpio_set_irq_enabled_with_callback(GPIO_TOO_LOW, GPIO_IRQ_EDGE_RISE, true, &too_low_handler);       // this sets up interups
+    // gpio_set_irq_enabled_with_callback(GPIO_TOO_HIGH, GPIO_IRQ_EDGE_RISE, true, &too_high_handler);     // this sets up interups
+    // gpio_set_irq_enabled_with_callback(GPIO_ENCODER1_IN1, GPIO_IRQ_EDGE_FALL, true, &encoder1_handler); // this sets up interups
 }
 
 void init_motor_buttons()
@@ -211,18 +223,20 @@ void motor_up()
         gpio_put(GPIO_MOTOR1_IN2, !on);
         gpio_put(GPIO_MOTOR2_IN1, on);
         gpio_put(GPIO_MOTOR2_IN2, !on);
-        if (encoder1_c >= encoder2_c)
-        {
-            gpio_put(GPIO_MOTOR1_EN, 1);
-        }
-        else
-            gpio_put(GPIO_MOTOR1_EN, 0);
-        if (encoder1_c <= encoder2_c)
-        {
-            gpio_put(GPIO_MOTOR2_EN, 1);
-        }
-        else
-            gpio_put(GPIO_MOTOR2_EN, 0);
+        gpio_put(GPIO_MOTOR1_EN, 1);
+        gpio_put(GPIO_MOTOR2_EN, 1);
+        // if (encoder1_c >= encoder2_c)
+        // {
+        //     gpio_put(GPIO_MOTOR1_EN, 1);
+        // }
+        // else
+        //     gpio_put(GPIO_MOTOR1_EN, 0);
+        // if (encoder1_c <= encoder2_c)
+        // {
+        //     gpio_put(GPIO_MOTOR2_EN, 1);
+        // }
+        // else
+        //     gpio_put(GPIO_MOTOR2_EN, 0);
     }
 }
 void motor_down()
@@ -241,19 +255,21 @@ void motor_down()
         gpio_put(GPIO_MOTOR1_IN2, on);
         gpio_put(GPIO_MOTOR2_IN1, !on);
         gpio_put(GPIO_MOTOR2_IN2, on);
+        gpio_put(GPIO_MOTOR1_EN, 1);
+        gpio_put(GPIO_MOTOR2_EN, 1);
         // enable
-        if (encoder1_c >= encoder2_c)
-        {
-            gpio_put(GPIO_MOTOR1_EN, 1);
-        }
-        else
-            gpio_put(GPIO_MOTOR1_EN, 0);
-        if (encoder1_c <= encoder2_c)
-        {
-            gpio_put(GPIO_MOTOR2_EN, 1);
-        }
-        else
-            gpio_put(GPIO_MOTOR2_EN, 0);
+        // if (encoder1_c >= encoder2_c)
+        // {
+        //     gpio_put(GPIO_MOTOR1_EN, 1);
+        // }
+        // else
+        //     gpio_put(GPIO_MOTOR1_EN, 0);
+        // if (encoder1_c <= encoder2_c)
+        // {
+        //     gpio_put(GPIO_MOTOR2_EN, 1);
+        // }
+        // else
+        //     gpio_put(GPIO_MOTOR2_EN, 0);
     }
 }
 
