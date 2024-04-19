@@ -39,11 +39,10 @@ enum
 #define GPIO_ENCODER2_IN1 8
 #define GPIO_ENCODER2_IN2 9
 
-#define GPIO_ETHERNET_SDA 2
-#define GPIO_ETHERNET_SCL 3
 
-#define GPIO_INTERNET_SDA 4
-#define GPIO_INTERNET_SCL 5
+#define GPIO_INTERNET_out 3
+#define GPIO_INTERNET_in0 4
+#define GPIO_INTERNET_in1 5
 
 #define GPIO_MOVE_UP 21
 #define GPIO_MOVE_DOWN 22
@@ -81,18 +80,22 @@ void encoder1_handler()
     {
         encoder1_c--;
     }
-    if (encoder1_c < 600)
-    {
-        cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
-    }
 }
 
 void encoder2_handler()
 {
-
+    bool read = gpio_get(GPIO_ENCODER2_IN2);
+    if (read)
+    {
+        encoder2_c++;
+    }
+    else
+    {
+        encoder2_c--;
+    }
 }
 
-void gpio_handler(uint gpio, uint32_t events)
+void irq_handler(uint gpio, uint32_t events)
 {
     if (gpio == GPIO_TOO_HIGH)
     {
@@ -130,33 +133,6 @@ void init_motors()
     gpio_set_dir(GPIO_MOTOR2_IN2, GPIO_OUT);
 }
 
-void init_encoders()
-{
-
-    //gpio_set_irq_enabled_with_callback(GPIO_ENCODER1_IN1, GPIO_IRQ_EDGE_FALL, true, &encoder1_handler); // this sets up interups
-    //gpio_set_irq_enabled_with_callback(GPIO_ENCODER2_IN1, GPIO_IRQ_EDGE_FALL, true, &encoder2_handler);
-    // encoder1 TODO
-    // encoder2 TODO
-    // gpio_init(LED_RED);
-    // gpio_init(LED_YLW);
-    // gpio_set_dir(LED_RED, GPIO_OUT);
-    // gpio_set_dir(LED_YLW, GPIO_OUT);
-}
-
-void init_limit_switches()
-{
-    gpio_init(GPIO_TOO_LOW);
-    gpio_init(GPIO_TOO_HIGH);
-    gpio_pull_down(GPIO_TOO_HIGH);
-    gpio_pull_down(GPIO_TOO_LOW);
-    gpio_init(GPIO_ENCODER1_IN1);
-    gpio_init(GPIO_ENCODER1_IN2);
-    gpio_pull_up(GPIO_ENCODER1_IN1);
-    gpio_pull_up(GPIO_ENCODER1_IN2);
-    gpio_set_irq_enabled_with_callback(GPIO_TOO_LOW, GPIO_IRQ_EDGE_FALL, true, &too_low_handler);   // this sets up interups
-    gpio_set_irq_enabled_with_callback(GPIO_TOO_HIGH, GPIO_IRQ_EDGE_FALL, true, &too_high_handler); // this sets up interups
-}
-
 void init_inputs()
 {
     gpio_init(GPIO_TOO_LOW);
@@ -174,13 +150,9 @@ void init_inputs()
     gpio_pull_up(GPIO_ENCODER1_IN1);
     gpio_pull_up(GPIO_ENCODER1_IN2);
 
-    gpio_set_irq_enabled_with_callback(GPIO_TOO_HIGH, GPIO_IRQ_EDGE_RISE, true, &gpio_handler);
+    gpio_set_irq_enabled_with_callback(GPIO_TOO_HIGH, GPIO_IRQ_EDGE_RISE, true, &irq_handler);
     gpio_set_irq_enabled(GPIO_TOO_LOW, GPIO_IRQ_EDGE_RISE, true);
     gpio_set_irq_enabled(GPIO_ENCODER1_IN1, GPIO_IRQ_EDGE_FALL, true);
-
-    // gpio_set_irq_enabled_with_callback(GPIO_TOO_LOW, GPIO_IRQ_EDGE_RISE, true, &too_low_handler);       // this sets up interups
-    // gpio_set_irq_enabled_with_callback(GPIO_TOO_HIGH, GPIO_IRQ_EDGE_RISE, true, &too_high_handler);     // this sets up interups
-    // gpio_set_irq_enabled_with_callback(GPIO_ENCODER1_IN1, GPIO_IRQ_EDGE_FALL, true, &encoder1_handler); // this sets up interups
 }
 
 void init_motor_buttons()
@@ -191,22 +163,8 @@ void init_motor_buttons()
     gpio_set_dir(GPIO_MOVE_DOWN, GPIO_IN);
     gpio_set_dir(GPIO_MOVE_UP, GPIO_IN);
 }
-void read_encoder()
-{
-    // TODO
-}
 
-int move_motors_buttons()
-{
-    bool down = gpio_get(GPIO_MOVE_DOWN);
-    bool up = gpio_get(GPIO_MOVE_UP);
-    if (down && !up)
-        return MOTOR_DOWN;
-    else if (up && !down)
-        return MOTOR_UP;
-    else
-        return MOTOR_STOP;
-}
+
 void motor_up()
 {
     // check limit switches
@@ -223,20 +181,21 @@ void motor_up()
         gpio_put(GPIO_MOTOR1_IN2, !on);
         gpio_put(GPIO_MOTOR2_IN1, on);
         gpio_put(GPIO_MOTOR2_IN2, !on);
-        gpio_put(GPIO_MOTOR1_EN, 1);
-        gpio_put(GPIO_MOTOR2_EN, 1);
-        // if (encoder1_c >= encoder2_c)
-        // {
-        //     gpio_put(GPIO_MOTOR1_EN, 1);
-        // }
-        // else
-        //     gpio_put(GPIO_MOTOR1_EN, 0);
-        // if (encoder1_c <= encoder2_c)
-        // {
-        //     gpio_put(GPIO_MOTOR2_EN, 1);
-        // }
-        // else
-        //     gpio_put(GPIO_MOTOR2_EN, 0);
+        if (encoder1_c < encoder2_c)
+        {
+            gpio_put(GPIO_MOTOR1_EN, 1);
+            gpio_put(GPIO_MOTOR2_EN, 0);
+        }
+        if else (encoder1_c > encoder2_c)
+        {
+            gpio_put(GPIO_MOTOR1_EN, 0);
+            gpio_put(GPIO_MOTOR2_EN, 1);
+        }
+        else
+        {
+            gpio_put(GPIO_MOTOR1_EN, 1);
+            gpio_put(GPIO_MOTOR2_EN, 1);
+        }
     }
 }
 void motor_down()
@@ -255,21 +214,22 @@ void motor_down()
         gpio_put(GPIO_MOTOR1_IN2, on);
         gpio_put(GPIO_MOTOR2_IN1, !on);
         gpio_put(GPIO_MOTOR2_IN2, on);
-        gpio_put(GPIO_MOTOR1_EN, 1);
-        gpio_put(GPIO_MOTOR2_EN, 1);
-        // enable
-        // if (encoder1_c >= encoder2_c)
-        // {
-        //     gpio_put(GPIO_MOTOR1_EN, 1);
-        // }
-        // else
-        //     gpio_put(GPIO_MOTOR1_EN, 0);
-        // if (encoder1_c <= encoder2_c)
-        // {
-        //     gpio_put(GPIO_MOTOR2_EN, 1);
-        // }
-        // else
-        //     gpio_put(GPIO_MOTOR2_EN, 0);
+        
+        if (encoder1_c > encoder2_c)
+        {
+            gpio_put(GPIO_MOTOR1_EN, 0);
+            gpio_put(GPIO_MOTOR2_EN, 1);
+        }
+        if else (encoder1_c < encoder2_c)
+        {
+            gpio_put(GPIO_MOTOR1_EN, 1);
+            gpio_put(GPIO_MOTOR2_EN, 0);
+        }
+        else
+        {
+            gpio_put(GPIO_MOTOR1_EN, 1);
+            gpio_put(GPIO_MOTOR2_EN, 1);
+        }
     }
 }
 
@@ -299,39 +259,48 @@ int main()
     cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
 
     init_motors();
-    // init_limit_switches();
-    // init_encoders();
     init_inputs();
     init_motor_buttons();
 
-    // gpio_init(6);
-    // gpio_init(7);
-    // gpio_set_dir(6,GPIO_IN);
-    // gpio_set_dir(7,GPIO_IN);
-    // gpio_pull_down(0);
-    // gpio_set_function(0,GPIO_FUNC_XIP);
-    // gpio_set_pulls(0,1,0);//pull up
-    // gpio_set_irqover
-    // gpio_set_irqenable
-    // gpio_set_irq_enabled_with_callback(0, GPIO_IRQ_EDGE_RISE, true, &too_high_handler); //this sets up interups
-    // multithread to networking TODO
     while (1)
     {
-        switch (move_motors_buttons())
+        //check buttons
+        bool down = gpio_get(GPIO_MOVE_DOWN);
+        bool up = gpio_get(GPIO_MOVE_UP);
+        bool in1 = gpio_get(GPIO_INTERNET_in1);
+        bool in0 = gpio_get(GPIO_INTERNET_in0);
+        if (down && !up)
         {
-        case MOTOR_DOWN:
             motor_down();
-            break;
-        case MOTOR_UP:
+        }
+        else if (up && !down)
+        {
             motor_up();
-            break;
-        case MOTOR_STOP:
+        }
+        else if (up & down)
+        {
             gpio_put(GPIO_MOTOR1_EN, 0);
             gpio_put(GPIO_MOTOR2_EN, 0);
-            break;
+        } 
+        else if(!in1 & in0)//01 top
+        {
+            motor_up();
         }
-        // check up/down move switches and move accordenly with if statements TODO
-
-        // check networking request buffer and move TODO
+        else if(in1 & !in0)//10 bottom
+        {
+            motor_down();
+        }
+        else if(in1 & in0)//11 midpoint
+        {
+            
+        }
+        else //00 stop
+        {
+            gpio_put(GPIO_MOTOR1_EN, 0);
+            gpio_put(GPIO_MOTOR2_EN, 0);
+        }
+        
+        
+        
     }
 }
