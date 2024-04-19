@@ -47,11 +47,13 @@ enum
 #define GPIO_MOVE_UP 21
 #define GPIO_MOVE_DOWN 22
 
-#define MAX_ENCODER_C 15000
-#define MIN_ENCODER_C 0
 
-int16_t encoder1_c = 0; // how many phases from too high limit switch
-int16_t encoder2_c = 0;
+bool has_encoder_top = false;
+bool has_encoder_bottom = false;
+int encoder_top = 0;
+int encoder_bottom = 0;
+int encoder1_c = 0; // how many phases from too high limit switch
+int encoder2_c = 0;
 static bool too_high = false;
 static bool too_low = false;
 void too_high_handler()
@@ -60,6 +62,17 @@ void too_high_handler()
     gpio_put(GPIO_MOTOR1_EN, 0);
     gpio_put(GPIO_MOTOR2_EN, 0);
     too_high = true;
+    if(!has_encoder_bottom)
+    {
+        encoder_top = 0;
+        encoder1_c = 0;
+    }
+    else
+    {
+        encoder_top = 0;
+        encoder_bottom = encoder_bottom - encoder1_c;
+        encoder1_c = 0;
+    }
 }
 void too_low_handler()
 {
@@ -67,6 +80,7 @@ void too_low_handler()
     gpio_put(GPIO_MOTOR1_EN, 0);
     gpio_put(GPIO_MOTOR2_EN, 0);
     too_low = true;
+    encoder_bottom = encoder1_c;
 }
 
 void encoder1_handler()
@@ -85,12 +99,14 @@ void encoder1_handler()
 void encoder2_handler()
 {
     bool read = gpio_get(GPIO_ENCODER2_IN2);
-    if (read)
+    if (!read)
     {
+        cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
         encoder2_c++;
     }
     else
     {
+        cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
         encoder2_c--;
     }
 }
@@ -139,6 +155,8 @@ void init_inputs()
     gpio_init(GPIO_TOO_HIGH);
     gpio_init(GPIO_ENCODER1_IN1);
     gpio_init(GPIO_ENCODER1_IN2);
+    gpio_init(GPIO_ENCODER2_IN1);
+    gpio_init(GPIO_ENCODER2_IN2);
 
     gpio_set_dir(GPIO_TOO_HIGH, GPIO_IN);
     gpio_set_dir(GPIO_TOO_LOW, GPIO_IN);
@@ -150,9 +168,15 @@ void init_inputs()
     gpio_pull_up(GPIO_ENCODER1_IN1);
     gpio_pull_up(GPIO_ENCODER1_IN2);
 
+    gpio_set_dir(GPIO_ENCODER2_IN1, GPIO_IN);
+    gpio_set_dir(GPIO_ENCODER2_IN2, GPIO_IN);
+    gpio_pull_up(GPIO_ENCODER2_IN1);
+    gpio_pull_up(GPIO_ENCODER2_IN2);
+
     gpio_set_irq_enabled_with_callback(GPIO_TOO_HIGH, GPIO_IRQ_EDGE_RISE, true, &irq_handler);
     gpio_set_irq_enabled(GPIO_TOO_LOW, GPIO_IRQ_EDGE_RISE, true);
     gpio_set_irq_enabled(GPIO_ENCODER1_IN1, GPIO_IRQ_EDGE_FALL, true);
+    gpio_set_irq_enabled(GPIO_ENCODER2_IN1, GPIO_IRQ_EDGE_FALL, true);
 }
 
 void init_motor_buttons()
@@ -162,6 +186,11 @@ void init_motor_buttons()
     gpio_init(GPIO_MOVE_UP);
     gpio_set_dir(GPIO_MOVE_DOWN, GPIO_IN);
     gpio_set_dir(GPIO_MOVE_UP, GPIO_IN);
+
+    gpio_init(GPIO_INTERNET_in0);
+    gpio_init(GPIO_INTERNET_in1);
+    gpio_set_dir(GPIO_INTERNET_in0, GPIO_IN);
+    gpio_set_dir(GPIO_INTERNET_in1, GPIO_IN);
 }
 
 
@@ -186,7 +215,7 @@ void motor_up()
             gpio_put(GPIO_MOTOR1_EN, 1);
             gpio_put(GPIO_MOTOR2_EN, 0);
         }
-        if else (encoder1_c > encoder2_c)
+        else if(encoder1_c > encoder2_c)
         {
             gpio_put(GPIO_MOTOR1_EN, 0);
             gpio_put(GPIO_MOTOR2_EN, 1);
@@ -217,13 +246,13 @@ void motor_down()
         
         if (encoder1_c > encoder2_c)
         {
-            gpio_put(GPIO_MOTOR1_EN, 0);
-            gpio_put(GPIO_MOTOR2_EN, 1);
-        }
-        if else (encoder1_c < encoder2_c)
-        {
             gpio_put(GPIO_MOTOR1_EN, 1);
             gpio_put(GPIO_MOTOR2_EN, 0);
+        }
+        else if(encoder1_c < encoder2_c)
+        {
+            gpio_put(GPIO_MOTOR1_EN, 0);
+            gpio_put(GPIO_MOTOR2_EN, 1);
         }
         else
         {
@@ -232,7 +261,31 @@ void motor_down()
         }
     }
 }
-
+int tol = 5;
+void goto_mid()
+{
+    if(has_encoder_top || has_encoder_bottom)
+    {
+        //error
+    }
+    else
+    {
+        int mid = encoder_bottom / 2;
+        if(encoder1_c < mid - tol)
+        {
+            motor_down();
+        }
+        else if(encoder1_c > mid + tol)
+        {
+            motor_up();
+        }
+        else
+        {
+            gpio_put(GPIO_MOTOR1_EN, 0);
+            gpio_put(GPIO_MOTOR2_EN, 0);
+        }
+    }
+}
 int main()
 {
     stdio_init_all();
@@ -292,7 +345,7 @@ int main()
         }
         else if(in1 & in0)//11 midpoint
         {
-            
+            goto_mid();
         }
         else //00 stop
         {
