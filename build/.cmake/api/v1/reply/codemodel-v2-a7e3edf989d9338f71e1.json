@@ -1140,7 +1140,7 @@
 				{
 					"directoryIndex" : 0,
 					"id" : "blc::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-blc-Debug-7733724d52551e584e0d.json",
+					"jsonFile" : "target-blc-Debug-1b102affd5a8390a8bb3.json",
 					"name" : "blc",
 					"projectIndex" : 0
 				},
@@ -1205,6 +1205,6 @@
 	"version" : 
 	{
 		"major" : 2,
-		"minor" : 4
+		"minor" : 6
 	}
 }

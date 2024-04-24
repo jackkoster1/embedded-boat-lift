@@ -126,7 +126,7 @@
 			"compileCommandFragments" : 
 			[
 				{
-					"fragment" : "-mcpu=cortex-m0plus -mthumb -Og -g"
+					"fragment" : "-mcpu=cortex-m0plus -mthumb -Og -g -std=gnu11"
 				},
 				{
 					"backtrace" : 2,
@@ -135,9 +135,6 @@
 				{
 					"backtrace" : 2,
 					"fragment" : "-fdata-sections"
-				},
-				{
-					"fragment" : "-std=gnu11"
 				}
 			],
 			"defines" : 
@@ -1452,7 +1449,7 @@
 			"compileCommandFragments" : 
 			[
 				{
-					"fragment" : "-mcpu=cortex-m0plus -mthumb -Og -g"
+					"fragment" : "-mcpu=cortex-m0plus -mthumb -Og -g -std=gnu++17"
 				},
 				{
 					"backtrace" : 2,
@@ -1477,9 +1474,6 @@
 				{
 					"backtrace" : 2,
 					"fragment" : "-fno-use-cxa-atexit"
-				},
-				{
-					"fragment" : "-std=gnu++17"
 				}
 			],
 			"defines" : 
