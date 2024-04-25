@@ -56,7 +56,6 @@ int encoder1_c = 0; // how many phases from too high limit switch
 int encoder2_c = 0;
 static bool too_high = false;
 static bool too_low = false;
-static bool at_mid = false;
 void too_high_handler()
 {
     // TODO set motor enables to off and flag the too high var
@@ -274,7 +273,7 @@ void goto_mid()
     {
         //error
     }
-    else if(!at_mid)
+    else 
     {
         int mid = encoder_bottom / 2;
         if(encoder1_c < mid - tol)
@@ -287,9 +286,11 @@ void goto_mid()
         }
         else
         {
-            at_mid = true;
+            
             gpio_put(GPIO_MOTOR1_EN, 0);
             gpio_put(GPIO_MOTOR2_EN, 0);
+            while(!(gpio_get(GPIO_MOVE_DOWN) || gpio_get(GPIO_MOVE_UP))
+                &&(gpio_get(GPIO_INTERNET_in1) && gpio_get(GPIO_INTERNET_in0)));//stop lift till next command
         }
     }
 }
@@ -331,28 +332,24 @@ int main()
         bool in0 = gpio_get(GPIO_INTERNET_in0);
         if (down && !up)
         {
-            at_mid = false;
+            
             motor_down();
         }
         else if (up && !down)
         {
-            at_mid = false;
             motor_up();
         }
         else if (up & down)
         {
-            at_mid = false;
             gpio_put(GPIO_MOTOR1_EN, 0);
             gpio_put(GPIO_MOTOR2_EN, 0);
         } 
         else if(!in1 & in0)//01 top
         {
-            at_mid = false;
             motor_up();
         }
         else if(in1 & !in0)//10 bottom
         {
-            at_mid = false;
             motor_down();
         }
         else if(in1 & in0)//11 midpoint
@@ -361,7 +358,6 @@ int main()
         }
         else //00 stop
         {
-            at_mid = false;
             gpio_put(GPIO_MOTOR1_EN, 0);
             gpio_put(GPIO_MOTOR2_EN, 0);
         }
