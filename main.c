@@ -24,9 +24,6 @@ enum
 #define GPIO_TOO_HIGH 0
 #define GPIO_TOO_LOW 1
 
-#define LED_RED 11
-#define LED_YLW 10
-
 #define GPIO_MOTOR1_EN 13
 #define GPIO_MOTOR1_IN1 14
 #define GPIO_MOTOR1_IN2 15
@@ -39,8 +36,6 @@ enum
 #define GPIO_ENCODER2_IN1 8
 #define GPIO_ENCODER2_IN2 9
 
-
-#define GPIO_INTERNET_out 3
 #define GPIO_INTERNET_in0 4
 #define GPIO_INTERNET_in1 5
 
@@ -50,7 +45,7 @@ enum
 
 bool has_encoder_top = false;
 bool has_encoder_bottom = false;
-int encoder_top = 0;
+const int encoder_top = 0; // will always be 0
 int encoder_bottom = 0;
 int encoder1_c = 0; // how many phases from too high limit switch
 int encoder2_c = 0;
@@ -62,24 +57,15 @@ void too_high_handler()
     gpio_put(GPIO_MOTOR1_EN, 0);
     gpio_put(GPIO_MOTOR2_EN, 0);
     too_high = true;
-    if(!has_encoder_bottom)
-    {
-        encoder_top = 0;
-        encoder1_c = 0;
-        encoder2_c = 0;
-    }
-    else
-    {
-        encoder_top = 0;
+    encoder1_c = 0;
+    encoder2_c = 0;
+    if(has_encoder_bottom)
         encoder_bottom = encoder_bottom - encoder1_c;
-        encoder1_c = 0;
-        encoder2_c = 0;
-    }
+        
     has_encoder_top = true;
 }
 void too_low_handler()
 {
-    // TODO set motor enables to off and flag the too low var
     gpio_put(GPIO_MOTOR1_EN, 0);
     gpio_put(GPIO_MOTOR2_EN, 0);
     too_low = true;
@@ -90,11 +76,11 @@ void too_low_handler()
 void encoder1_handler()
 {
     bool read = gpio_get(GPIO_ENCODER1_IN2);
-    if (read) // platform moving down
+    if (read) 
     {
         encoder1_c--;
     }
-    else
+    else// platform moving down
     {
         encoder1_c++;
     }
@@ -108,7 +94,7 @@ void encoder2_handler()
         cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
         encoder2_c--;
     }
-    else
+    else // platform moving down
     {
         cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
         encoder2_c++;
