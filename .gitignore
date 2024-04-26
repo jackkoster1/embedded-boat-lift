@@ -33,3 +33,10 @@
 
 # .vscode Folder
 .vscode/
+build/blc.hex
+build/blc.elf.map
+build/blc.elf
+build/blc.dis
+build/blc.bin
+build/.ninja_log
+build/.ninja_deps
