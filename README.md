@@ -55,7 +55,7 @@ Voltages
 
 
 
-![alt_text](Wiring_Diagram.jpg "image_tooltip")
+![alt_text](Wiring_Diagram2.jpg "image_tooltip")
 
 
 
